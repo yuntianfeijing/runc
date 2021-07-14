@@ -181,8 +181,15 @@ func getCFQStats(path string, stats *cgroups.Stats) error {
 	}
 	stats.BlkioStats.SectorsRecursive = blkioStats
 
-	if blkioStats, err = getBlkioStat(filepath.Join(path, "blkio.io_service_bytes_recursive")); err != nil {
-		return err
+	// 尝试读取 blkio.throttle.io_service_bytes
+	if blkioStats, err = getBlkioStat(filepath.Join(path, "blkio.throttle.io_service_bytes")); err != nil {
+		fmt.Printf("getBlkioStat blkio.throttle.io_service_bytes error:%s and will be ignore \n",err.Error())
+	}
+	// 判断是否是多磁盘混杂调度模式，混杂模式下使用blkio.throttle.io_service_bytes，否则使用blkio.io_service_bytes_recursive
+	if blkioStats == nil || len(blkioStats) == 1 {
+		if blkioStats, err = getBlkioStat(filepath.Join(path, "blkio.io_service_bytes_recursive")); err != nil {
+			return err
+		}
 	}
 	stats.BlkioStats.IoServiceBytesRecursive = blkioStats
 
